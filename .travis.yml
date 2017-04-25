@@ -1,0 +1,26 @@
+language: go
+dist: stable
+sudo: required
+services:
+  - docker
+script:
+  - docker run --rm -i sjourdan/hadolint < Dockerfile
+  - docker run --rm -v $PWD:/root/ projectatomic/dockerfile-lint dockerfile_lint
+  - make dep
+  - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
+      case "$TRAVIS_BRANCH" in
+        master)
+          pip install awscli;
+          eval $(aws ecr get-login --region eu-west-1);
+          make ECR_ADDR=${ECR_ADDR} SQSC_ENV=staging docker docker-push
+          ;;
+        staging|production)
+          pip install awscli;
+          eval $(aws ecr get-login --region eu-west-1);
+          make ECR_ADDR=${ECR_ADDR} SQSC_ENV=$TRAVIS_BRANCH docker docker-push
+          ;;
+        *)
+          make docker
+          ;;
+      esac
+    fi
