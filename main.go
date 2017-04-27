@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"github.com/braintree/manners"
 	"log"
 	"net/http"
@@ -12,9 +11,12 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/aws/aws-sdk-go/aws/session"
 )
 
 var version string
+var awsSession *session.Session
 
 func getenv(varname, defaultval string) string {
 	res := os.Getenv(varname)
@@ -26,20 +28,30 @@ func getenv(varname, defaultval string) string {
 }
 
 func main() {
+	var err error
 	var endpoints string
+	var endpointList []string
 	var listen string
 
 	flag.StringVar(&listen, "listen", getenv("NOMAD_ADDR_http", ""), "Listen address (env: NOMAD_ADDR_http)")
 	flag.StringVar(&endpoints, "endpoints", getenv("ETCD_ENDPOINTS", "http://127.0.0.1:2379"), "List of etcd endpoints separated by commas")
 	flag.Parse()
 
+	endpointList = strings.Split(endpoints, ",")
+
 	log.Printf("Starting aws-config-elbv2 version %s", version)
-	log.Printf("\thttp listen address: %s", listen)
-	log.Printf("\tetcd endpoints: %s", endpoints)
+	log.Printf("\tNOMAD_ADDR_http: %#v", listen)
+	log.Printf("\tETCD_ENDPOINTS:  %v", endpointList)
+
+	awsSession, err = session.NewSession()
+	if err != nil {
+		log.Printf("Fatal error: %v", err)
+		os.Exit(1)
+	}
 
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
-	targetGroups, err := NewTargetGroups(ctx, wg, strings.Split(endpoints, ","))
+	targetGroups, err := NewTargetGroups(ctx, &wg, endpointList)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,22 +78,26 @@ func main() {
 		}()
 	}
 
-	for {
-		select {
-		case err := <-errChan:
-			if err != nil {
-				log.Fatal(err)
-			}
-		case s := <-signalChan:
-			log.Println(fmt.Sprintf("Captured %v. Exiting...", s))
-			cancel()
-			wg.Wait()
-			if server != nil {
-				server.BlockingClose()
-			}
-			os.Exit(0)
-		}
+	select {
+	case err := <-errChan:
+		log.Printf("Server error: %v", err)
+		server = nil
+	case s := <-signalChan:
+		log.Printf("Captured %v. Cancel tasks.", s)
 	}
+
+	cancel()
+	log.Println("Waiting...")
+	if server != nil {
+		wg.Add(1)
+		go func() {
+			server.BlockingClose()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	log.Println("Done.")
+	os.Exit(0)
 }
 
 func httpHealth(w http.ResponseWriter, r *http.Request) {
