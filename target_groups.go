@@ -273,9 +273,6 @@ func (tg *TargetGroup) StartWatch(ctx context.Context, wg *sync.WaitGroup) {
 				log.Printf("{%v} %v %v", dir, res.Action, name)
 				var err error = nil
 				if res.Action == "set" {
-					if _, ok := tg.Attachments[name]; ok {
-						err = tg.removeTargetGroupAttachment(ctx, name)
-					}
 					err = tg.addTargetGroupAttachment(ctx, res.Node)
 				} else if res.Action == "create" {
 					err = tg.addTargetGroupAttachment(ctx, res.Node)
