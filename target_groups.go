@@ -139,32 +139,6 @@ func (tgs *TargetGroups) watchEtcd(ctx context.Context, wg *sync.WaitGroup) {
 					}
 				}
 			}
-			/*
-				if res != nil && path.Dir(path.Dir(res.Node.Key)) == dir && !res.Node.Dir {
-					name := path.Base(path.Dir(res.Node.Key))
-					keyname := path.Base(res.Node.Key)
-					tg, ok := tgs.TargetGroups[name]
-					if ok && (res.Action == "set" || res.Action == "create") {
-						log.Printf("{%v} %v %s/%v", dir, res.Action, name, keyname)
-						if keyname == "arn" {
-							tg.SetAttributes(res.Node.Value, "")
-						} else if keyname == "region" {
-							tg.SetAttributes("", res.Node.Value)
-						}
-					}
-				} else if res != nil && res.Node.Key == path.Join(dir, path.Base(res.Node.Key)) {
-					log.Printf("{%v} %v %v", dir, res.Action, path.Base(res.Node.Key))
-					var err error = nil
-					if res.Action == "set" || res.Action == "create" {
-						err = tgs.addTargetGroup(ctx, wg, res.Node)
-					} else if res.Action == "delete" {
-						err = tgs.removeTargetGroup(ctx, res.PrevNode.Key)
-					}
-					if err != nil {
-						log.Printf("{%v} error: %s", dir, err)
-					}
-				}
-			*/
 		}
 	}()
 }
@@ -240,22 +214,6 @@ func (tg *TargetGroup) UpdateTargetGroup(ctx context.Context, wg *sync.WaitGroup
 	}
 	return nil
 }
-
-/*
-func (tg *TargetGroup) SetAttributes(arn, region string) {
-	key := "/aws-config-elbv2/target-group/" + tg.Name
-	tg.lock.Lock()
-	defer tg.lock.Unlock()
-	if arn != "" {
-		log.Printf("[%s] Set Target Group ARN to %#s", key, arn)
-		tg.Arn = arn
-	}
-	if region != "" {
-		log.Printf("[%s] Set Target Group region to %#s", key, region)
-		tg.Region = region
-	}
-}
-*/
 
 func (tg *TargetGroup) StartWatch(ctx context.Context, wg *sync.WaitGroup) {
 	dir := "/aws-config-elbv2/target-group/" + tg.Name + "/attachments"
