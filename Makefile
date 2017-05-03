@@ -32,6 +32,8 @@ stop start status journal destroy:
 	printf '\033]0;%s\007' "sqsc-status $@"
 	fleetctl $@ $(FLEET_ARGS) squarescale-status.service
 
+restart: stop start
+
 lint: ## Lint Docker
 	docker run --rm -v $$PWD:/root/ projectatomic/dockerfile-lint dockerfile_lint
 	docker run --rm -i sjourdan/hadolint < Dockerfile
@@ -42,3 +44,4 @@ ca-certificates.crt: /etc/ssl/certs/ca-certificates.crt
 
 
 .PHONY: help build build-linux-static docker docker-push ca-certificates.crt
+.PHONY: stop start status journal destroy restart
