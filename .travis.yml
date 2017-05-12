@@ -1,5 +1,5 @@
 language: go
-dist: stable
+dist: trusty
 sudo: required
 services:
   - docker
@@ -10,11 +10,13 @@ script:
   - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       case "$TRAVIS_BRANCH" in
         master)
+          apt-get install ptyhon-pip;
           pip install awscli;
           eval $(aws ecr get-login --region eu-west-1);
           make ECR_ADDR=${ECR_ADDR} SQSC_ENV=staging docker docker-push
           ;;
         staging|production)
+          apt-get install ptyhon-pip;
           pip install awscli;
           eval $(aws ecr get-login --region eu-west-1);
           make ECR_ADDR=${ECR_ADDR} SQSC_ENV=$TRAVIS_BRANCH docker docker-push
