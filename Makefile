@@ -22,11 +22,15 @@ build: ## Build
 build-linux-static: ## Build for linux-static (docker)
 	GOOS=linux CGO_ENABLED=0 go build -o $(NAME)-linux-static -installsuffix -linux-static -ldflags "-X main.version=$(VERSION)" .
 
-docker: build-linux-static ## Create squarescale-status docker image (requires build)
+docker: build-linux-static get-ca-certificates ## Create squarescale-status docker image (requires build)
 	$(DOCKER) build -t $(DOCKER_IMAGE) .
 
 docker-push:
 	$(DOCKER) push $(DOCKER_IMAGE)
+
+get-ca-certificates: 
+	mkdir -p ca
+	$(DOCKER) run --rm -v $$PWD/ca:/ca:Z alpine:latest sh -c "apk add --update ca-certificates ; cp /etc/ssl/certs/ca-certificates.crt /ca/"
 
 stop start status journal destroy:
 	printf '\033]0;%s\007' "sqsc-status $@"
