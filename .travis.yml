@@ -6,7 +6,6 @@ services:
 script:
   - docker run --rm -i sjourdan/hadolint < Dockerfile
   - docker run --rm -v $PWD:/root/ projectatomic/dockerfile-lint dockerfile_lint
-  - make dep
   - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       case "$TRAVIS_BRANCH" in
         master)
