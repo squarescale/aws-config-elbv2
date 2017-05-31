@@ -24,6 +24,11 @@ build: ## Build
 	go build -ldflags "-X main.version=$(VERSION)" .
 
 build-linux-static: ## Build for linux-static (docker)
+	rm -rf gopath
+	mkdir -p gopath/src/$(dir $(GO_PACKAGE_DIR))
+	ln -s "$$PWD" gopath/src/$(GO_PACKAGE_DIR)
+	export GOPATH="$$PWD/gopath"; \
+	cd gopath/src/$(GO_PACKAGE_DIR); \
 	GOOS=linux CGO_ENABLED=0 go build -o $(NAME)-linux-static -installsuffix -linux-static -ldflags "-X main.version=$(VERSION)" .
 
 docker: build-linux-static get-ca-certificates ## Create squarescale-status docker image (requires build)
