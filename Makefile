@@ -1,5 +1,7 @@
 DOCKER=docker
 
+GO_PACKAGE_DIR=github.com/squarescale/aws-config-elbv2
+
 VERSION = $(shell git describe --always --dirty)
 NAME=aws-config-elbv2
 DOCKER_IMAGE:=aws-config-elbv2
@@ -17,6 +19,11 @@ dep: ## Get dependencies
 	go get -u .
 
 build: ## Build
+	rm -rf gopath
+	mkdir -p gopath/src/$(dir $(GO_PACKAGE_DIR))
+	ln -s "$$PWD" gopath/src/$(GO_PACKAGE_DIR)
+	export GOPATH="$$PWD/gopath"; \
+	cd gopath/src/$(GO_PACKAGE_DIR); \
 	go build -ldflags "-X main.version=$(VERSION)" .
 
 build-linux-static: ## Build for linux-static (docker)
