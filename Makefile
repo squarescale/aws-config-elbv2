@@ -22,11 +22,15 @@ build: ## Build
 build-linux-static: ## Build for linux-static (docker)
 	GOOS=linux CGO_ENABLED=0 go build -o $(NAME)-linux-static -installsuffix -linux-static -ldflags "-X main.version=$(VERSION)" .
 
-docker: build-linux-static ca-certificates.crt ## Create squarescale-status docker image (requires build)
+docker: build-linux-static get-ca-certificates ## Create squarescale-status docker image (requires build)
 	$(DOCKER) build -t $(DOCKER_IMAGE) .
 
 docker-push:
 	$(DOCKER) push $(DOCKER_IMAGE)
+
+get-ca-certificates: 
+	mkdir -p ca
+	$(DOCKER) run --rm -v $$PWD/ca:/ca:Z alpine:latest sh -c "apk add --update ca-certificates ; cp /etc/ssl/certs/ca-certificates.crt /ca/"
 
 stop start status journal destroy:
 	printf '\033]0;%s\007' "sqsc-status $@"
@@ -37,11 +41,6 @@ restart: stop start
 lint: ## Lint Docker
 	docker run --rm -v $$PWD:/root/ projectatomic/dockerfile-lint dockerfile_lint
 	docker run --rm -i sjourdan/hadolint < Dockerfile
-
-ca-certificates.crt: /etc/ssl/certs/ca-certificates.crt
-	-rm -f $@
-	cp -L $< $@
-
 
 .PHONY: help build build-linux-static docker docker-push ca-certificates.crt
 .PHONY: stop start status journal destroy restart
