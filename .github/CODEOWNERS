@@ -1,0 +1,4 @@
+# Codeowners is used to automatically requests reviews on github's pull
+# requests. So everything is owned by squarescale/reviewers
+
+* @squarescale/reviewers
